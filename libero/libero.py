@@ -40,12 +40,12 @@ def _generate_examples(paths) -> Iterator[Tuple[str, Any]]:
         for i in range(actions.shape[0]):
             episode.append({
                 'observation': {
-                    'image': images[i],
-                    'wrist_image': wrist_images[i],
-                    'state': np.concatenate((states[i], gripper_states[i]), axis=-1),
-                    'joint_state': joint_states[i],
+                    'image': images[i][::-1],
+                    'wrist_image': wrist_images[i][::-1],
+                    'state': np.asarray(np.concatenate((states[i], gripper_states[i]), axis=-1), np.float32),
+                    'joint_state': np.asarray(joint_states[i], dtype=np.float32),
                 },
-                'action': actions[i],
+                'action': np.asarray(actions[i], dtype=np.float32),
                 'discount': 1.0,
                 'reward': float(i == (actions.shape[0] - 1)),
                 'is_first': i == 0,
@@ -67,13 +67,13 @@ def _generate_examples(paths) -> Iterator[Tuple[str, Any]]:
 
     # for smallish datasets, use single-thread parsing
     for sample in paths:
-        with h5py.File(sample, "r") in F:
+        with h5py.File(sample, "r") as F:
             n_demos = len(F['data'])
         for demo_id in range(n_demos):
             yield _parse_example(sample, demo_id)
 
 
-class ExampleDataset(MultiThreadedDatasetBuilder):
+class Libero(MultiThreadedDatasetBuilder):
     """DatasetBuilder for example dataset."""
 
     VERSION = tfds.core.Version('1.0.0')
